@@ -1,28 +1,40 @@
 # 오산대학교 동아리 FAQ
-학생 공개 FAQ + 단일 담당자 관리자 페이지.
 
-## 연결 현황 (2026-10-21)
-- GitHub Pages 공개 프런트엔드: `/`
-- 관리자: `/admin/`
-- FAQ 독립 Supabase 프로젝트: `achfgdunjdjztxsxneam`
-- 학생 목록은 **DB에서 게시된 문항만** 불러옵니다. 예시 질문을 실제 게시글로 오인하지 않습니다.
-- 관리자 기능: 사번+별도 비밀번호, 초안 등록·수정·게시·비공개·수정이력·복원·카테고리 관리·비밀번호 변경.
-- 기존 모니터링 데이터베이스와 저장소는 **변경하지 않았습니다**.
-- 이전 v0.2 원본 ZIP은 ChatGPT 파일 라이브러리에 보존되어 있으며, 이 저장소의 화면은 해당 설계를 기준으로 복구·구현했습니다. 원본 파일 구조와 현재 배포 코드가 완전히 동일하다는 뜻은 아닙니다.
+**학생 공개 열람 + 이메일 없는 사번·비밀번호 단일 관리자 시스템** (2026-10-21 기준)
 
-## 운영 활성화
-**현재 미완료:** 관리자 Auth 계정 생성, 사번-사용자 연결, `FAQ_LOGIN_PEPPER` 등록 및 실로그인·게시·복원 검증.
-설정 절차와 보안 점검은 [ADMIN_SETUP.md](./ADMIN_SETUP.md)를 참고하세요.
-메인 포털의 FAQ 링크는 이미 연결되어 있으나, 공개된 질문은 아직 없습니다.
+- 학생용: https://hanjinjoo.github.io/osan-club-faq/
+- 관리자: https://hanjinjoo.github.io/osan-club-faq/admin/
+- 메인 포털: https://hanjinjoo.github.io/osan-club/
+- **FAQ 전용** Supabase 프로젝트: `achfgdunjdjztxsxneam`
+- 운영 중인 모니터링 Supabase `irqovqzrdvqmuuuvxcmt`와 기존 메인·자료실 소스는 변경하지 않았습니다.
 
-## DB·보안
-- 학생에게는 `faq_public_list` RPC의 게시 버전만 전달.
-- 모든 FAQ DB 테이블 RLS 활성화 및 anon/authenticated 직접 접근 차단.
-- DB 관리자 RPC는 매번 Auth JWT와 활성 담당자 매핑 확인.
-- 로그인 서버 함수 `faq-login`은 암호를 Auth에서 검증하며 8회 실패 시 15분 제한.
-- 자격 증명은 코드에 존재하지 않습니다.
-- URL 간 탐색은 `target="_blank"`, `rel="noopener noreferrer"` 사용.
-- 공급망 의존성: supabase-js 2.79.0 고정 버전.
+## 관리자 인증
 
-## 향후 범위
-PPT/PDF 접수와 동아리별 보관·제출/미제출 현황은 별도 후속 단계. 아직 본 앱에 구현되지 않았습니다.
+- 이메일 / Supabase Auth 사용자 계정 **필요 없음**.
+- 사번(4~16자리 숫자) + 별도 비밀번호(최소 12자)를 이용합니다.
+- 최초 등록에는 Supabase Secrets에 별도로 보관한 1회 등록 코드가 필요합니다.
+- 비밀번호는 bcrypt 해시로 DB에만 저장하고, 익명 브라우저가 해시를 조회할 수 없습니다.
+- 관리자 임시 세션은 8시간 만료 / 로그아웃 가능 / 비밀번호 변경 시 다른 세션 철회.
+- 학생은 로그인 없이 게시된 질문만 검색·분류별 조회할 수 있습니다.
+- 질문 임시저장·게시·수정·비공개·수정 이력·버전 복원·카테고리 변경은 관리자 인증을 거친 서버에서만 처리합니다.
+
+**다음 단계(사용자 설정 필요):** [ADMIN_SETUP.md](./ADMIN_SETUP.md)에 따라 FAQ 전용 Edge Function Secrets에 `FAQ_LOGIN_PEPPER`, `FAQ_BOOTSTRAP_SECRET`을 각각 서로 다른 32자 이상의 무작위 값으로 추가하고, 관리자 페이지에서 실제 사번·비밀번호를 1회 등록하세요. 이메일 주소를 입력할 필요가 없습니다.
+
+> **현재 미검증:** 실제 비밀값 등록, 첫 관리자 가입, 로그인 및 FAQ 등록·게시·복원 실사용 흐름. 이 설정은 완료 전까지 운영 완료라고 보고하지 않습니다.
+
+## 기술
+
+- GitHub Pages 정적 학생/관리자 화면: `index.html`, `admin/index.html`
+- Supabase PostgreSQL: `faq_categories`, `faq_admins`, `faq_items`, `faq_revisions`, `faq_sessions`, `faq_login_attempts`
+- Supabase `faq-admin` Edge Function: 인증, 세션 발급, API 진입점. 서버 역할 키와 비밀값은 공개 저장소에 없음.
+- 기존 `faq-login` 엔드포인트는 HTTP 410으로 폐기.
+- 학생 공개 목록: `faq_public_categories()`, `faq_public_list()` RPC
+- 신규 관리자 쓰기: `faq_admin_action` 등은 **서버 역할만** 실행 가능.
+- 복구 가능한 스키마 및 함수 원본은 `supabase/migrations/`에 저장.
+- GitHub Actions는 JavaScript 구문 검사와 추가 보안 구조 테스트를 실행하고, Pages는 `main/(root)`에서 자동 배포.
+
+## 변경 이력 및 향후 범위
+
+- 이메일 기반 인증 설계를 담당자 요청에 따라 폐기하고 독립 사번+비밀번호 인증으로 재개발했습니다.
+- 원래 v0.2 ZIP은 파일 라이브러리에 따로 보관되어 있으며, 현재 운영 코드는 해당 설계 기준 재구성본입니다.
+- PPT/PDF 접수, 동아리별 보관, 제출/미제출 현황은 사용자 승인 후 **별도 단계**로 진행합니다.
