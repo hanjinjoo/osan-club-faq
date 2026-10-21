@@ -10,18 +10,10 @@
 - 기존 모니터링 데이터베이스와 저장소는 **변경하지 않았습니다**.
 - 이전 v0.2 원본 ZIP은 ChatGPT 파일 라이브러리에 보존되어 있으며, 이 저장소의 화면은 해당 설계를 기준으로 복구·구현했습니다. 원본 파일 구조와 현재 배포 코드가 완전히 동일하다는 뜻은 아닙니다.
 
-## 운영 활성화에 필요한 마지막 설정
-1. [FAQ 프로젝트 Authentication > Providers](https://supabase.com/dashboard/project/achfgdunjdjztxsxneam/auth/providers)에서 공개 이메일 회원가입 비활성화.
-2. Authentication > Users에서 담당자용 이메일·비밀번호 사용자 1명을 생성하고 이메일을 확인 처리. 이메일은 관리자 로그인 화면에서 받지 않습니다.
-3. FAQ DB에서만 해당 Auth UUID와 실제 사번을 매핑:
-   ```sql
-   insert into public.faq_admins(user_id,employee_no,role,is_active)
-   values ('<AUTH_USER_UUID>','<EMPLOYEE_NUMBER>','owner',true);
-   ```
-   사번과 비밀번호는 **GitHub 또는 문서에 실제 값으로 입력하지 마세요**.
-4. [FAQ Edge Functions Secrets](https://supabase.com/dashboard/project/achfgdunjdjztxsxneam/settings/functions)에서 `FAQ_LOGIN_PEPPER`를 랜덤한 32자 이상 비밀값으로 추가. 이것은 공개 JavaScript에 절대 작성하지 마세요. `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`는 Supabase 런타임이 제공합니다.
-5. 로그인 → 임시저장 → 게시 → 학생 노출 → 비공개 → 수정이력 → 복원을 차례대로 실환경 확인.
-6. 실제 검증 완료 전에는 통합 메인 사이트에 FAQ 링크를 추가하지 마세요.
+## 운영 활성화
+**현재 미완료:** 관리자 Auth 계정 생성, 사번-사용자 연결, `FAQ_LOGIN_PEPPER` 등록 및 실로그인·게시·복원 검증.
+설정 절차와 보안 점검은 [ADMIN_SETUP.md](./ADMIN_SETUP.md)를 참고하세요.
+메인 포털의 FAQ 링크는 이미 연결되어 있으나, 공개된 질문은 아직 없습니다.
 
 ## DB·보안
 - 학생에게는 `faq_public_list` RPC의 게시 버전만 전달.
