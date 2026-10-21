@@ -28,3 +28,5 @@ jobs:
           }
           new Function(fs.readFileSync('config.js','utf8'));
           NODE
+      - name: Run FAQ source security tests
+        run: node --test tests/*.test.mjs
