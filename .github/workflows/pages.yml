@@ -42,6 +42,8 @@ jobs:
           cp index.html config.js .nojekyll _site/
           cp admin/index.html _site/admin/
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
