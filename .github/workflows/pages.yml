@@ -1,0 +1,49 @@
+name: Verify and deploy FAQ
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: faq-pages
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate page JavaScript
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          for (const p of ['index.html','admin/index.html']) {
+            const html=fs.readFileSync(p,'utf8');
+            const scripts=[...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)];
+            for(const s of scripts) if(s[1].trim()) new Function(s[1]);
+            if(!html.includes('rel="noopener noreferrer"'))throw Error('Missing safe external link '+p);
+            console.log(p+': validated');
+          }
+          new Function(fs.readFileSync('config.js','utf8'));
+          NODE
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build public-only artifact
+        run: |
+          mkdir -p _site/admin
+          cp index.html config.js .nojekyll _site/
+          cp admin/index.html _site/admin/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
