@@ -68,7 +68,9 @@ Deno.serve(async(req:Request)=>{
   if(error.code==='28000')return fail('로그인이 만료되었거나 인증되지 않았습니다.',401);
   if(error.code==='40001')return fail('다른 변경이 먼저 저장되었습니다. 새로고침 후 다시 시도하세요.',409);
   // Never return DB details or SQL query to browser.
-  if(['save','category_save','change_password'].includes(action))return fail('입력값 또는 기존 비밀번호를 확인해 주세요.',400);
+  if(action==='save')return fail('질문 저장을 처리하지 못했습니다. 질문 내용과 HTTPS 링크를 확인한 뒤 다시 시도해 주세요.',400);
+  if(action==='category_save')return fail('카테고리 입력값을 확인하거나 다시 시도해 주세요.',400);
+  if(action==='change_password')return fail('현재 비밀번호나 새 비밀번호 조건을 확인해 주세요.',400);
   return fail('요청 처리에 실패했습니다.',400);
  }
  return json({data:result});
